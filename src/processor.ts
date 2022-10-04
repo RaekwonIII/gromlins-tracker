@@ -56,7 +56,9 @@ function handleTransfer(
     block: SubstrateBlock,
     event: EvmLogEvent,
 ): TransferData {
-    const {from, to, tokenId} = gromlins.events["Transfer(address,address,uint256)"].decode(event.args);
+
+    const evmLog = ((event.args.log || event.args));
+    const {from, to, tokenId} = gromlins.events["Transfer(address,address,uint256)"].decode(evmLog);
 
     const transfer = {
         id: event.id,
