@@ -129,11 +129,11 @@ async function saveTransfers(ctx: Ctx, transferData: TransferData[]) {
             token = new Token({
                 id: tokenId,
                 uri: await contract.tokenURI(td.token),
-                owner: to,
                 contract: contractEntity,
             });
             tokens.set(token.id, token);
         }
+        token.owner = to;
 
         const transfer  = new Transfer({
             id: td.id,
