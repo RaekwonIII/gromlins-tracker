@@ -15,7 +15,7 @@ const processor = new SubstrateBatchProcessor()
     .setDataSource({
         // Lookup archive by the network name in the Subsquid registry
         archive: lookupArchive("moonbeam", {release: "FireSquid"}),
-        chain: "wss://moonbeam.api.onfinality.io/public-ws"
+        chain: "wss://moonbeam.public.blastapi.io"
     })
     .addEvmLog(contractAddress, {
         filter: [gromlins.events["Transfer(address,address,uint256)"].topic],
