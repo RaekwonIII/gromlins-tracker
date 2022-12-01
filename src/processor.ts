@@ -4,13 +4,12 @@ import {BatchContext, BatchProcessorItem, EvmLogEvent, SubstrateBatchProcessor, 
 import {Store, TypeormDatabase} from "@subsquid/typeorm-store"
 import {In} from "typeorm"
 import {Contract, Owner, Token, Transfer} from "./model"
-import * as gromlins from "./abi/gromlins"
+import { events, Contract as ContractAPI } from "./abi/gromlins"
 import { ethers } from "ethers"
 
 const contractAddress = "0xF27A6C72398eb7E25543d19fda370b7083474735";
 
 const processor = new SubstrateBatchProcessor()
-    .setBatchSize(500)
     .setBlockRange({ from: 1777560 })
     .setDataSource({
         // Lookup archive by the network name in the Subsquid registry
@@ -18,7 +17,7 @@ const processor = new SubstrateBatchProcessor()
         chain: "wss://moonbeam.api.onfinality.io/public-ws"
     })
     .addEvmLog(contractAddress, {
-        filter: [gromlins.events["Transfer(address,address,uint256)"].topic],
+        filter: [events.Transfer.topic],
     });
 
 
@@ -58,7 +57,7 @@ function handleTransfer(
 ): TransferData {
 
     const evmLog = ((event.args.log || event.args));
-    const {from, to, tokenId} = gromlins.events["Transfer(address,address,uint256)"].decode(evmLog);
+    const {from, to, tokenId} = events.Transfer.decode(evmLog);
 
     const transfer = {
         id: event.id,
@@ -104,7 +103,7 @@ async function saveTransfers(ctx: Ctx, transferData: TransferData[]) {
 
     const transfers: Set<Transfer> = new Set();
     for (const td of transferData) {
-        const contract = new gromlins.Contract(
+        const contract = new ContractAPI(
             ctx,
             { height: td.block },
             contractAddress
