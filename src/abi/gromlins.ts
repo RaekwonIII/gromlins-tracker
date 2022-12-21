@@ -158,7 +158,7 @@ export const functions = {
     revokeRole: new Func<[role: string, account: string], {role: string, account: string}, []>(
         abi, '0xd547741f'
     ),
-    royaltyInfo: new Func<[something: ethers.BigNumber, _salePrice: ethers.BigNumber], {something: ethers.BigNumber, _salePrice: ethers.BigNumber}, ([receiver: string, royaltyAmount: ethers.BigNumber] & {receiver: string, royaltyAmount: ethers.BigNumber})>(
+    royaltyInfo: new Func<[_: ethers.BigNumber, _salePrice: ethers.BigNumber], {_salePrice: ethers.BigNumber}, ([receiver: string, royaltyAmount: ethers.BigNumber] & {receiver: string, royaltyAmount: ethers.BigNumber})>(
         abi, '0x2a55205a'
     ),
     'safeTransferFrom(address,address,uint256)': new Func<[from: string, to: string, tokenId: ethers.BigNumber], {from: string, to: string, tokenId: ethers.BigNumber}, []>(
@@ -167,7 +167,7 @@ export const functions = {
     'safeTransferFrom(address,address,uint256,bytes)': new Func<[from: string, to: string, tokenId: ethers.BigNumber, data: string], {from: string, to: string, tokenId: ethers.BigNumber, data: string}, []>(
         abi, '0xb88d4fde'
     ),
-    secondarySaleFee: new Func<[ethers.BigNumber], {}, [string, ethers.BigNumber]>(
+    secondarySaleFee: new Func<[_: ethers.BigNumber], {}, [_: string, _: ethers.BigNumber]>(
         abi, '0x4322d9b7'
     ),
     setApprovalForAll: new Func<[operator: string, approved: boolean], {operator: string, approved: boolean}, []>(
@@ -348,7 +348,7 @@ export class Contract extends ContractBase {
         return this.eth_call(functions.royaltyInfo, [arg0, _salePrice])
     }
 
-    secondarySaleFee(arg0: ethers.BigNumber): Promise<[string, ethers.BigNumber]> {
+    secondarySaleFee(arg0: ethers.BigNumber): Promise<[_: string, _: ethers.BigNumber]> {
         return this.eth_call(functions.secondarySaleFee, [arg0])
     }
 

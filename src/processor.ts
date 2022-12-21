@@ -4,10 +4,14 @@ import {BatchContext, BatchProcessorItem, EvmLogEvent, SubstrateBatchProcessor, 
 import {Store, TypeormDatabase} from "@subsquid/typeorm-store"
 import {In} from "typeorm"
 import {Contract, Owner, Token, Transfer} from "./model"
-import { events, Contract as ContractAPI } from "./abi/gromlins"
-import { ethers } from "ethers"
+import { events, functions } from "./abi/gromlins"
+import { Multicall } from "./abi/multicall";
+import { maxBy } from 'lodash';
+import { BigNumber, ethers } from "ethers"
 
 const contractAddress = "0xF27A6C72398eb7E25543d19fda370b7083474735";
+// https://docs.moonbeam.network/builders/build/canonical-contracts/
+const MULTICALL_ADDRESS = "0x83e3b61886770de2F64AAcaD2724ED4f08F7f36B";
 
 const processor = new SubstrateBatchProcessor()
     .setBlockRange({ from: 1777560 })
@@ -103,11 +107,6 @@ async function saveTransfers(ctx: Ctx, transferData: TransferData[]) {
 
     const transfers: Set<Transfer> = new Set();
     for (const td of transferData) {
-        const contract = new ContractAPI(
-            ctx,
-            { height: td.block },
-            contractAddress
-        );
 
         let from = owners.get(td.from);
         if (from == null) {
@@ -127,7 +126,7 @@ async function saveTransfers(ctx: Ctx, transferData: TransferData[]) {
         if (token == null) {
             token = new Token({
                 id: tokenId,
-                uri: await contract.tokenURI(td.token),
+                // uri: using multicall to set this
                 contract: contractEntity,
             });
             tokens.set(token.id, token);
@@ -146,6 +145,30 @@ async function saveTransfers(ctx: Ctx, transferData: TransferData[]) {
 
         transfers.add(transfer);
     }
+
+
+    const maxHeight = maxBy(transferData, t => t.block)!.block; 
+    // query the multicall contract at the max height of the chunk
+    const multicall = new Multicall(ctx, {height: maxHeight}, MULTICALL_ADDRESS)
+
+    ctx.log.info(`Calling mutlicall for ${transferData.length} tokens...`)
+    // call in pages of size 100
+    const results = await multicall.tryAggregate(functions.tokenURI, transferData.map(t => [contractAddress, [t.token]] as [string, any[]]), 100);
+
+    results.forEach((res, i) => {
+        let t = tokens.get(transferData[i].token.toString());
+        if (t) {
+            let uri = '';
+            if (res.success) {
+                uri = <string>res.value;
+            } else if (res.returnData) {
+                uri = <string>functions.tokenURI.tryDecodeResult(res.returnData) || '';
+            }
+            t.uri = uri;
+        }
+    });
+    ctx.log.info(`Done`);
+    
 
     await ctx.store.save([...owners.values()]);
     await ctx.store.save([...tokens.values()]);
